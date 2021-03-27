@@ -32,7 +32,7 @@ public class Author {
 
     @JsonBackReference
     @ContainedIn
-    @ManyToMany(mappedBy = "authorList")
+    @ManyToMany(mappedBy = "authorList", fetch = FetchType.EAGER)
     private List<Book>bookList;
 
     @JsonBackReference
@@ -90,4 +90,6 @@ public class Author {
     public void setBirthYear(String birthYear) {
         this.birthYear = birthYear;
     }
+
+
 }

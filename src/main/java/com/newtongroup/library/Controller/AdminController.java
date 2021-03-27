@@ -42,12 +42,13 @@ public class AdminController {
     @RequestMapping("/delete-menu")
     public String deleteUserMenu(Model theModel, Principal principal) {
         theModel.addAttribute("header", HeaderUtils.getHeaderString(userRepository.findByUsername(principal.getName())));
-        theModel.addAttribute("email", new String());
+        theModel.addAttribute("email", "");
         return "admin/delete-user-menu";
     }
 
     @RequestMapping("/delete-user")
     public String deleteUser(@RequestParam(name="email") String email,  Model theModel, Principal principal) {
+        // bör testas om det som bör vara kvar är kvar.
         theModel.addAttribute("header", HeaderUtils.getHeaderString(userRepository.findByUsername(principal.getName())));
 
         User user = userRepository.findByUsername(email);
@@ -66,21 +67,16 @@ public class AdminController {
                     break;
                 case "ROLE_VISITOR":
                     Visitor visitor = visitorRepository.findByEmail(user.getUsername());
+                    if (visitor.getActiveLibraryCard() != null) {
+                        List<BookLoan> bookLoans = visitor.getActiveLibraryCard().getBookLoans()
+                                .stream()
+                                .filter(loan -> !loan.getBookReturned())
+                                .collect(Collectors.toList());
 
-                    for (BookLoan bookLoan : visitor.getActiveLibraryCard().getBookLoans()) {
-                        if(!bookLoan.getBookReturned()) {
-                            List<BookLoan> bookLoans = visitor.getActiveLibraryCard().getBookLoans()
-                                    .stream()
-                                    .filter(loan -> loan.getBookReturned() == false)
-                                    .collect(Collectors.toList());
-
-                            theModel.addAttribute("visitor", visitor);
-                            theModel.addAttribute("bookLoans", bookLoans);
-                            return "admin/delete-failed-user-has-loans";
-                        }
+                        theModel.addAttribute("visitor", visitor);
+                        theModel.addAttribute("bookLoans", bookLoans);
                     }
-
-                    hashAllUSerData(user);
+                    hashAllUserData(user);
                     break;
                 default:
                     break;
@@ -92,18 +88,25 @@ public class AdminController {
         return "admin/delete-confirmation";
     }
 
-    private void hashAllUSerData(User user) {
+    private void hashAllUserData(User user) {
+
+        // testa om det hashas
+        long timeHash = System.currentTimeMillis() / 1000L;
         Visitor visitor = visitorRepository.findByEmail(user.getUsername());
-        visitor.setFirstName(passwordEncoder.encode(visitor.getFirstName()));
-        visitor.setLastName(passwordEncoder.encode(visitor.getLastName()));
-        visitor.setStreet(passwordEncoder.encode(visitor.getStreet()));
-        visitor.setPostalCode(passwordEncoder.encode(visitor.getPostalCode()));
-        visitor.setCity(passwordEncoder.encode(visitor.getCity()));
-        visitor.setPhone(passwordEncoder.encode(visitor.getPhone()));
-        visitor.setPersonalNumber(passwordEncoder.encode(visitor.getPersonalNumber()));
-        visitor.setEmail(passwordEncoder.encode(visitor.getEmail()));
+        visitor.setFirstName(passwordEncoder.encode(visitor.getFirstName() + timeHash));
+        visitor.setLastName(passwordEncoder.encode(visitor.getLastName() + timeHash));
+        visitor.setStreet(passwordEncoder.encode(visitor.getStreet() + timeHash));
+        visitor.setPostalCode(passwordEncoder.encode(visitor.getPostalCode() + timeHash));
+        visitor.setCity(passwordEncoder.encode(visitor.getCity() + timeHash));
+        visitor.setPhone(passwordEncoder.encode(visitor.getPhone() + timeHash));
+        visitor.setPersonalNumber(passwordEncoder.encode(visitor.getPersonalNumber() + timeHash));
+        visitor.setEmail(passwordEncoder.encode(visitor.getEmail() + timeHash));
         visitor.setActive(false);
+
+        if(visitor.getActiveLibraryCard() != null) {
+            visitor.getActiveLibraryCard().setActive(false);
+        }
+
         visitorRepository.save(visitor);
     }
-
 }
